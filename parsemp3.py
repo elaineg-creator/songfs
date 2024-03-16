@@ -8,10 +8,7 @@ def generate_music_library(directory):
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(".mp3"):
-                # print("root: " ,root)
-                # print("file: ", file)
                 file_path = os.path.join(root, file)
-                # print("norm path: ", os.path.normpath(file_path))
                 artist, album, song = get_mp3_metadata(os.path.normpath(file_path))
                 if artist and album and song:
                     music_library[artist][album].append(song)
