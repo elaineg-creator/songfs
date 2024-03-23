@@ -15,18 +15,18 @@ def generate_music_library(directory):
     return music_library
 
 def get_mp3_metadata(file_path):
-    print("File path is: ", file_path)
     try:
         audio = MP3(file_path)
-        print("here")
         artist = audio['TPE1'].text[0] if 'TPE1' in audio else "Unknown Artist"
         album = audio['TALB'].text[0] if 'TALB' in audio else "Unknown Album"
         song = audio['TIT2'].text[0] if 'TIT2' in audio else "Unknown Song"
         return artist, album, song
     except Exception as e:
         print("Error:", e)
+        print(file_path)
         return None, None, None
 
+# Test function/visual of tree
 def print_music_library(library):
     for artist, albums in library.items():
         print(artist)
