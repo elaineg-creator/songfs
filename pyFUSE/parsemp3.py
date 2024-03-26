@@ -12,9 +12,9 @@ def generate_music_library(directory):
                 file_path = os.path.join(root, file)
                 artist, album, song = get_mp3_metadata(os.path.normpath(file_path))
                 if artist and album and song:
-                    if song == "Unknown Song":
-                        song = file
                     song_title = song + ".mp3"
+                    if song == "Unknown Song":
+                        song_title = file
                     music_library[artist][album].append(song_title)
                     song_to_path[song_title] = os.path.abspath(file_path)
     return [music_library, song_to_path]
