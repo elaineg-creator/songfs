@@ -1,19 +1,31 @@
-import inotify.adapters
+import os
+from inotify_simple import INotify, flags
 
-def _main():
-    i = inotify.adapters.Inotify()
+os.mkdir('/tmp/inotify_test')
 
-    i.add_watch('/tmp')
+inotify = INotify()
+watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
+wd = inotify.add_watch('/tmp/inotify_test', watch_flags)
 
-    with open('/tmp/test_file', 'w'):
-        pass
+# Now create, delete and modify some files in the directory being monitored:
+os.chdir('/tmp/inotify_test')
+# CREATE event for a directory:
+os.system('mkdir foo')
+# CREATE event for a file:
+os.system('echo hello > test.txt')
+# MODIFY event for the file:
+os.system('echo world >> test.txt')
+# DELETE event for the file
+os.system('rm test.txt')
+# DELETE event for the directory
+os.system('rmdir foo')
+os.chdir('/tmp')
+# DELETE_SELF on the original directory. # Also generates an IGNORED event
+# indicating the watch was removed.
+os.system('rmdir inotify_test')
 
-    for event in i.event_gen(yield_nones=False):
-        (_, type_names, path, filename) = event
-
-        print("PATH=[{}] FILENAME=[{}] EVENT_TYPES={}".format(
-              path, filename, type_names))
-
-if __name__ == '__main__':
-    while(True):
-        _main()
+# And see the corresponding events:
+for event in inotify.read():
+    print(event)
+    for flag in flags.from_mask(event.mask):
+        print('    ' + str(flag))
