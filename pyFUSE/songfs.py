@@ -22,7 +22,7 @@ from parsemp3 import generate_music_library, print_music_library
 class Passthrough(Operations):
     def __init__(self, root):
         self.root = root
-        self.music_library = generate_music_library(root) # Make dict of mp3s
+        self.music_library, self.song_to_path = generate_music_library(root) # Make dict of mp3s
         #print_music_library(self.music_library) # print for sanity checks
 
     # get full path
@@ -32,6 +32,27 @@ class Passthrough(Operations):
         path = os.path.join(self.root, partial)
         return path
 
+    def readlink(self, path):
+        print(path)
+        # Spoof metadata for dirs and files corresponding to artists, albums, and songs
+        parts = [i for i in path.split('/') if i != '']
+        
+
+        print(parts)
+        
+        artist, album, song = parts
+        if artist in self.music_library and album in self.music_library[artist] and song in self.music_library[artist][album]:
+            pathname = self.song_to_path[song]
+            if pathname.startswith("/"):
+                # Path name is absolute, sanitize it.
+                return os.path.relpath(pathname, self.root)
+            else:
+                return pathname
+                
+                
+        return ''
+        
+        
     # Override readdir to list directories and files corresponding to artists, albums, and songs
     def readdir(self, path, fh):
         # full_path = self._full_path(path)
@@ -95,27 +116,19 @@ class Passthrough(Operations):
         attrs['st_uid'] = attrs['st_gid'] = 0
         attrs['st_nlink'] = 1
         attrs['st_mode'] = stat.S_IFDIR | 0x777
+        # attrs['st_ino'] = 1858
+        # attrs['st_dev'] = 1858
+        # attrs['st_size'] = 1858
         
-        return attrs
-                 
-        # attrs = {
-        #     'st_atime': st.st_atime,
-        #     'st_ctime': st.st_ctime,
-        #     'st_gid': st.st_gid,
-        #     'st_mode': stat.S_IFDIR | 0o755, #st.st_mode,
-        #     'st_mtime': st.st_mtime,
-        #     'st_nlink': st.st_nlink,
-        #     'st_size': st.st_size,
-        #     'st_uid': st.st_uid
-        # }
+        print(path)
+        # Spoof metadata for dirs and files corresponding to artists, albums, and songs
+        parts = [i for i in path.split('/') if i != '']
+        
 
-
-        if path == '/':
+        print(parts)
+        if parts == []:
             return attrs
         
-        # Spoof metadata for dirs and files corresponding to artists, albums, and songs
-        parts = path.split('/')
-        print(parts)
         if len(parts) == 1:  # Artist directory
             print("Spoofing artist dir " + parts[0])
             if parts[0] in self.music_library:
@@ -129,10 +142,34 @@ class Passthrough(Operations):
         elif len(parts) == 3:  # Song file
             artist, album, song = parts
             if artist in self.music_library and album in self.music_library[artist] and song in self.music_library[artist][album]:
-                attrs['st_mode'] = stat.S_IFREG | 0x777 #1024  # Set size to non-zero to mark it as a file
+                attrs['st_mode'] = stat.S_IFLNK | 0x444 #1024  # Set size to non-zero to mark it as a file            
                 return attrs
+        elif len(parts) == 4:
+            artist, album, song, rootdir_song = parts
+            full_path = self._full_path(rootdir_song)
+            print(full_path)
+            st = os.lstat(full_path)
+            return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
+                     'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
+        return attrs
         # raise FuseOSError(errno.ENOENT)
+
+    def open(self, path, flags):
+        print('tried to open')
+        print(path)
+        parts = [i for i in path.split('/') if i != '']
+        artist, album, song, rootdir_song = parts
+        full_path = self._full_path(rootdir_song)
+        return os.open(full_path, flags)
+    
+
+    def read(self, path, length, offset, fh):
+        print('tried to read')
+        print(path)
+        os.lseek(fh, offset, os.SEEK_SET)
+        return os.read(fh, length)
+
 
 def main(mountpoint, root):
     FUSE(Passthrough(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
