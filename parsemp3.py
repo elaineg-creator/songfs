@@ -13,14 +13,12 @@ def generate_music_library(directory):
                 artist, album, song = get_mp3_metadata(os.path.normpath(file_path))
                 if artist and album and song:
                     music_library[artist][album].append(song)
-                    song_to_path[song] = file_path
+                    song_to_path[song] = os.path.abspath(file_path)
     return [music_library, song_to_path]
 
 def get_mp3_metadata(file_path):
-    print("File path is: ", file_path)
     try:
         audio = MP3(file_path)
-        print("here")
         artist = audio['TPE1'].text[0] if 'TPE1' in audio else "Unknown Artist"
         album = audio['TALB'].text[0] if 'TALB' in audio else "Unknown Album"
         song = audio['TIT2'].text[0] if 'TIT2' in audio else "Unknown Song"
@@ -40,7 +38,7 @@ def print_music_library(library, song_to_path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python program.py <directory>")
+        print("Usage: python parsemp3.py <directory>")
         sys.exit(1)
     
     directory = sys.argv[1]
