@@ -19,7 +19,7 @@ from parsemp3 import generate_music_library, print_music_library
 
 #S_IFDIR = 16384
 
-class Passthrough(Operations):
+class SongFS(Operations):
     def __init__(self, root):
         self.root = root
         self.music_library, self.song_to_path = generate_music_library(root) # Make dict of mp3s
@@ -32,25 +32,20 @@ class Passthrough(Operations):
         path = os.path.join(self.root, partial)
         return path
 
-    def readlink(self, path):
-        print(path)
-        # Spoof metadata for dirs and files corresponding to artists, albums, and songs
-        parts = [i for i in path.split('/') if i != '']
-        
-
-        print(parts)
-        
-        artist, album, song = parts
-        if artist in self.music_library and album in self.music_library[artist] and song in self.music_library[artist][album]:
-            pathname = self.song_to_path[song]
-            if pathname.startswith("/"):
-                # Path name is absolute, sanitize it.
-                return os.path.relpath(pathname, self.root)
-            else:
-                return pathname
+    # def readlink(self, path):
+    #     # Spoof metadata for dirs and files corresponding to artists, albums, and songs
+    #     parts = [i for i in path.split('/') if i != '']
+    #     artist, album, song = parts
+    #     if artist in self.music_library and album in self.music_library[artist] and song in self.music_library[artist][album]:
+    #         pathname = self.song_to_path[song]
+    #         if pathname.startswith("/"):
+    #             # Path name is absolute, sanitize it.
+    #             return os.path.relpath(pathname, self.root)
+    #         else:
+    #             return pathname
                 
                 
-        return ''
+    #     return ''
         
         
     # Override readdir to list directories and files corresponding to artists, albums, and songs
@@ -58,7 +53,7 @@ class Passthrough(Operations):
         # full_path = self._full_path(path)
         dirents = ['.', '..']
         
-        print(path)
+        
         # Spoof metadata for dirs and files corresponding to artists, albums, and songs
         parts = [i for i in path.split('/') if i != '']
         
@@ -139,18 +134,13 @@ class Passthrough(Operations):
             if artist in self.music_library and album in self.music_library[artist]:
                 attrs['st_mode'] = stat.S_IFDIR | 0x777 #(st.st_mode | 0o111) if attrs['st_mode'] & 0o111 else st.st_mode
                 return attrs
-        elif len(parts) == 3:  # Song file
+        elif len(parts) == 3:  # Song file 
             artist, album, song = parts
             if artist in self.music_library and album in self.music_library[artist] and song in self.music_library[artist][album]:
-                attrs['st_mode'] = stat.S_IFLNK | 0x444 #1024  # Set size to non-zero to mark it as a file            
-                return attrs
-        elif len(parts) == 4:
-            artist, album, song, rootdir_song = parts
-            full_path = self._full_path(rootdir_song)
-            print(full_path)
-            st = os.lstat(full_path)
-            return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
-                     'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
+                full_path = os.path.abspath(self.song_to_path[song])
+                st = os.lstat(full_path)
+                return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
+                            'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))     
 
         return attrs
         # raise FuseOSError(errno.ENOENT)
@@ -159,8 +149,9 @@ class Passthrough(Operations):
         print('tried to open')
         print(path)
         parts = [i for i in path.split('/') if i != '']
-        artist, album, song, rootdir_song = parts
-        full_path = self._full_path(rootdir_song)
+        artist, album, song = parts
+        full_path = os.path.abspath(self.song_to_path[song])
+        print(full_path)
         return os.open(full_path, flags)
     
 
@@ -172,7 +163,7 @@ class Passthrough(Operations):
 
 
 def main(mountpoint, root):
-    FUSE(Passthrough(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
+    FUSE(SongFS(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
 
 if __name__ == '__main__':
     main(sys.argv[2], sys.argv[1])
