@@ -13,11 +13,20 @@ import os
 import sys
 import errno
 import stat
+import pyinotify
 
 from fuse import FUSE, FuseOSError, Operations
 from parsemp3 import generate_music_library, print_music_library
 
 #S_IFDIR = 16384
+
+# EventHandler class for pyinotify, handles file/directory events
+class EventHandler(pyinotify.ProcessEvent):
+    def process_IN_CREATE(self, event):
+        print("Creating:", event.pathname)
+
+    def process_IN_DELETE(self, event):
+        print ("Removing:", event.pathname)
 
 class SongFS(Operations):
     def __init__(self, root):
@@ -166,4 +175,15 @@ def main(mountpoint, root):
     FUSE(SongFS(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
 
 if __name__ == '__main__':
+    # Create pyinotify watcher and notifier to watch for events in the root directory
+    wm = pyinotify.WatchManager()  # Watch Manager
+    mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # watched events
+    notifier = pyinotify.ThreadedNotifier(wm, EventHandler())
+    notifier.start()
+    wdd = wm.add_watch(os.getcwd() + "/" + sys.argv[1], mask, rec=True)
+    wm.rm_watch(wdd.values())
+    notifier.stop()
+    # print(os.getcwd() + "/" + sys.argv[1])
+
+
     main(sys.argv[2], sys.argv[1])
