@@ -14,24 +14,29 @@ import sys
 import errno
 import stat
 import pyinotify
+import functools
 
 from fuse import FUSE, FuseOSError, Operations
 from parsemp3 import generate_music_library, print_music_library
 
 #S_IFDIR = 16384
 
-# EventHandler class for pyinotify, handles file/directory events
-class EventHandler(pyinotify.ProcessEvent):
-    def process_IN_CREATE(self, event):
-        print("Creating:", event.pathname)
-
-    def process_IN_DELETE(self, event):
-        print ("Removing:", event.pathname)
+# Function that is run when files are deleted or created in root
+def on_loop(notifier, songfs):
+    songfs.music_library, songfs.song_to_path = generate_music_library(songfs.root) 
 
 class SongFS(Operations):
     def __init__(self, root):
         self.root = root
         self.music_library, self.song_to_path = generate_music_library(root) # Make dict of mp3s
+        
+        # Create pyinotify objects
+        wm = pyinotify.WatchManager()  # Watch Manager
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # watched events
+        on_loop_func = functools.partial(on_loop, songfs=self)
+        notifier = pyinotify.ThreadedNotifier(wm, default_proc_fun=on_loop_func)
+        wdd = wm.add_watch(os.getcwd() + "/" + sys.argv[1], mask, rec=True)
+        notifier.start()
         #print_music_library(self.music_library) # print for sanity checks
 
     # get full path
@@ -170,20 +175,10 @@ class SongFS(Operations):
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
 
-
 def main(mountpoint, root):
+    print("here")
     FUSE(SongFS(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
 
 if __name__ == '__main__':
-    # Create pyinotify watcher and notifier to watch for events in the root directory
-    wm = pyinotify.WatchManager()  # Watch Manager
-    mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # watched events
-    notifier = pyinotify.ThreadedNotifier(wm, EventHandler())
-    notifier.start()
-    wdd = wm.add_watch(os.getcwd() + "/" + sys.argv[1], mask, rec=True)
-    wm.rm_watch(wdd.values())
-    notifier.stop()
-    # print(os.getcwd() + "/" + sys.argv[1])
-
 
     main(sys.argv[2], sys.argv[1])
