@@ -23,6 +23,7 @@ from parsemp3 import generate_music_library, print_music_library
 
 # Function that is run when files are deleted or created in root
 def on_loop(notifier, songfs):
+    print("here")
     songfs.music_library, songfs.song_to_path = generate_music_library(songfs.root) 
 
 class SongFS(Operations):
@@ -176,7 +177,6 @@ class SongFS(Operations):
         return os.read(fh, length)
 
 def main(mountpoint, root):
-    print("here")
     FUSE(SongFS(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
 
 if __name__ == '__main__':
