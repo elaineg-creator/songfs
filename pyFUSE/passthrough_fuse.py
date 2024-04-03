@@ -8,12 +8,13 @@
 ###########################################
 
 # python passthrough_fuse.py [dir to mount] [mountpoint]
-# eg python3 passthrough_fuse.py rootdir/ mountdir/
+# eg python3 passthrough_fuse.py txtroot/ mountdir/
 
 from __future__ import with_statement
 
 import os
 import sys
+import stat
 import errno
 
 from fuse import FUSE, FuseOSError, Operations
@@ -54,12 +55,24 @@ class Passthrough(Operations):
         return dict((key, getattr(st, key)) for key in ('st_atime', 'st_ctime',
                      'st_gid', 'st_mode', 'st_mtime', 'st_nlink', 'st_size', 'st_uid'))
 
+        # attrs = {}
+        
+        # # Set the S_IFDIR flag to indicate that it's a directory
+        # attrs['st_ctime'] = attrs['st_atime'] = attrs['st_mtime'] = 0
+        # attrs['st_uid'] = attrs['st_gid'] = 0
+        # attrs['st_nlink'] = 1
+        # attrs['st_mode'] = stat.S_IFDIR | 0o755
+        # return attrs
+
     def readdir(self, path, fh):
         full_path = self._full_path(path)
 
         dirents = ['.', '..']
         if os.path.isdir(full_path):
             dirents.extend(os.listdir(full_path))
+
+        dirents.extend(['MyFakeDIR'])
+
         for r in dirents:
             yield r
 
