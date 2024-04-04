@@ -7,7 +7,7 @@ import os
 import subprocess
 
 # Import the script you want to test
-sys.path.append('../copyfs_1')
+sys.path.append('../songfs')
 
 
 import threading
