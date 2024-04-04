@@ -45,8 +45,8 @@ def check_root(output):
     unittest.TestCase().assertListEqual(sorted(actual_directories), sorted(expected_root))
     print("Root dir PASSED")
 
-# Update expected file
-# def update_expected():
+# Print out contents of FS
+# def output_print():
 #      with open(filepaths_data, "a") as f:
 #             for root, dirs, files in os.walk(mount_point):
 #                 for file in files:
