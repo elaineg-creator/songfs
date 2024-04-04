@@ -27,7 +27,7 @@ class TestScript(unittest.TestCase):
         self.assertEqual(song_dict["Taylor Swift"], {'1989': ['Bad Blood.mp3', 'Taylor Swift - Is It Over Now_ (Taylor\'s Version) (From The Vault) (Lyric Video) (64 kbps).mp3'], 'Midnights': ["You're Losing Me.mp3"]})
         self.assertEqual(song_path_dict["always with me always with you.mp3"], os.path.normpath(os.getcwd() + "/../songfs/mp3_directory/parsemp3_test_songs/always-with-me-always-with-you-long-21256.mp3"))
         self.assertEqual(song_path_dict["Taylor Swift - Is It Over Now_ (Taylor's Version) (From The Vault) (Lyric Video) (64 kbps).mp3"], os.path.normpath(os.getcwd() + "/../songfs/mp3_directory/parsemp3_test_songs/Taylor Swift - Is It Over Now_ (Taylor's Version) (From The Vault) (Lyric Video) (64 kbps).mp3"))
-    
+
 
 if __name__ == '__main__':
     # Run the tests
