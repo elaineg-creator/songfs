@@ -13,16 +13,31 @@ import os
 import sys
 import errno
 import stat
+import pyinotify
+import functools
 
 from fuse import FUSE, FuseOSError, Operations
 from parsemp3 import generate_music_library, print_music_library
 
 #S_IFDIR = 16384
 
+# Function that is run when files are deleted or created in root
+def on_loop(notifier, songfs):
+    # print("here")
+    songfs.music_library, songfs.song_to_path = generate_music_library(songfs.root) 
+
 class SongFS(Operations):
     def __init__(self, root):
         self.root = root
         self.music_library, self.song_to_path = generate_music_library(root) # Make dict of mp3s
+        
+        # Create pyinotify objects
+        wm = pyinotify.WatchManager()  # Watch Manager
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # watched events
+        on_loop_func = functools.partial(on_loop, songfs=self)
+        notifier = pyinotify.ThreadedNotifier(wm, default_proc_fun=on_loop_func)
+        wdd = wm.add_watch(os.getcwd() + "/" + sys.argv[1], mask, rec=True)
+        notifier.start()
         #print_music_library(self.music_library) # print for sanity checks
 
     # get full path
@@ -58,7 +73,7 @@ class SongFS(Operations):
         parts = [i for i in path.split('/') if i != '']
         
 
-        print(parts)
+        # print(parts)
         if parts == []:
             dirents.extend(self.music_library.keys())
             for r in dirents:
@@ -110,29 +125,29 @@ class SongFS(Operations):
         attrs['st_ctime'] = attrs['st_atime'] = attrs['st_mtime'] = 0
         attrs['st_uid'] = attrs['st_gid'] = 0
         attrs['st_nlink'] = 1
-        attrs['st_mode'] = stat.S_IFDIR | 0x777
+        attrs['st_mode'] = stat.S_IFDIR | 0o444
         # attrs['st_ino'] = 1858
         # attrs['st_dev'] = 1858
         # attrs['st_size'] = 1858
         
-        print(path)
+        # print(path)
         # Spoof metadata for dirs and files corresponding to artists, albums, and songs
         parts = [i for i in path.split('/') if i != '']
         
 
-        print(parts)
+        # print(parts)
         if parts == []:
             return attrs
         
         if len(parts) == 1:  # Artist directory
-            print("Spoofing artist dir " + parts[0])
+            # print("Spoofing artist dir " + parts[0])
             if parts[0] in self.music_library:
-                attrs['st_mode'] = stat.S_IFDIR | 0x777 #(st.st_mode | 0o111) if attrs['st_mode'] & 0o111 else st.st_mode
+                attrs['st_mode'] = stat.S_IFDIR | 0o444 #(st.st_mode | 0o111) if attrs['st_mode'] & 0o111 else st.st_mode
                 return attrs
         elif len(parts) == 2:  # Album directory
             artist, album = parts
             if artist in self.music_library and album in self.music_library[artist]:
-                attrs['st_mode'] = stat.S_IFDIR | 0x777 #(st.st_mode | 0o111) if attrs['st_mode'] & 0o111 else st.st_mode
+                attrs['st_mode'] = stat.S_IFDIR | 0o444 #(st.st_mode | 0o111) if attrs['st_mode'] & 0o111 else st.st_mode
                 return attrs
         elif len(parts) == 3:  # Song file 
             artist, album, song = parts
@@ -146,24 +161,24 @@ class SongFS(Operations):
         # raise FuseOSError(errno.ENOENT)
 
     def open(self, path, flags):
-        print('tried to open')
-        print(path)
+        # print('tried to open')
+        # print(path)
         parts = [i for i in path.split('/') if i != '']
         artist, album, song = parts
         full_path = os.path.abspath(self.song_to_path[song])
-        print(full_path)
+        # print(full_path)
         return os.open(full_path, flags)
     
 
     def read(self, path, length, offset, fh):
-        print('tried to read')
-        print(path)
+        # print('tried to read')
+        # print(path)
         os.lseek(fh, offset, os.SEEK_SET)
         return os.read(fh, length)
-
 
 def main(mountpoint, root):
     FUSE(SongFS(root), mountpoint, nothreads=True, foreground=True) # Pass through to default FUSE
 
 if __name__ == '__main__':
+
     main(sys.argv[2], sys.argv[1])
