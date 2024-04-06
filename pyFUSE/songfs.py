@@ -33,7 +33,7 @@ class SongFS(Operations):
         
         # Create pyinotify objects
         wm = pyinotify.WatchManager()  # Watch Manager
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # watched events
+        mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE  # watched events
         on_loop_func = functools.partial(on_loop, songfs=self)
         notifier = pyinotify.ThreadedNotifier(wm, default_proc_fun=on_loop_func)
         wdd = wm.add_watch(os.getcwd() + "/" + sys.argv[1], mask, rec=True)
