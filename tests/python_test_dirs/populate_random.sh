@@ -24,5 +24,7 @@ for ((i=1; i<=num_files; i++)); do
     file_name="$file_name.mp3"
     # Create an empty file with the random name in the specified directory
     touch "$directory/$file_name"
+
+    dd if=/dev/urandom of="$directory/$file_name" bs=1024 count=4096
     echo "Created file: $directory/$file_name"
 done
