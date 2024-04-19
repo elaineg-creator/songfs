@@ -1,7 +1,4 @@
-# songfs
+# SongFS
 
-Some useful links:
-- https://pypi.org/project/fuse-python/
-- https://medium.com/the-python-corner/writing-a-fuse-filesystem-in-python-5e0f2de3a813
-- https://inotify-simple.readthedocs.io/en/latest/
-- https://pypi.org/project/inotify-simple/
+SongFS is a FUSE-based mp3 filesystem whose purpose is to make is easy to sort through a folder full
+of mp3 files.
