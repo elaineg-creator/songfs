@@ -78,5 +78,5 @@ if __name__ == "__main__":
         print("Error: Invalid directory path")
         sys.exit(1)
 
-    music_library, song_to_path = generate_music_library(directory)
-    print_music_library(music_library, song_to_path)
+    music_library = generate_music_library(directory)
+    print_music_library(music_library)
