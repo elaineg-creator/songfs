@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Function to read directory and its contents recursively
+read_directory_and_contents() {
+    local start_time end_time elapsed_time
+    start_time=$(date +%s%N | cut -b1-13)  # Start time in seconds with nanosecond precision
+
+    # Check if the provided path is a directory
+    if [ ! -d "$1" ]; then
+        return
+    fi
+
+    # Loop through each file in the directory
+    for file in "$1"/*; do
+        if [ -f "$file" ]; then  # Check if it's a regular file
+            # Read the contents of the file (you may modify this part as needed)
+                echo "reading a file"
+            cat "$file" > trash_output/trash_output.txt
+        elif [ -d "$file" ]; then  # Check if it's a directory
+            # Call the function recursively for subdirectories
+            read_directory_and_contents "$file"
+        fi
+    done
+
+    end_time=$(date +%s%N | cut -b1-13)  # End time in milliseconds
+    elapsed_time="$(($end_time-$start_time))"
+    echo "Time taken to read directory '$1': $elapsed_time milliseconds"
+}
+
+# Replace 'directory_path' with the path to your desired directory
+directory_path="test_mountpoint"
+time read_directory_and_contents "$directory_path"
